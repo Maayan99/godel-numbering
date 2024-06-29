@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-const Card = dynamic(() => import('@app/components/ui/card').then((mod) => mod.Card))
-const CardContent = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardContent))
-const CardHeader = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardHeader))
-const CardTitle = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardTitle))
-const Input = dynamic(() => import('@app/components/ui/input').then((mod) => mod.Input))
+const Card = dynamic(() => import('./ui/card').then((mod) => mod.Card))
+const CardContent = dynamic(() => import('./ui/card').then((mod) => mod.CardContent))
+const CardHeader = dynamic(() => import('./ui/card').then((mod) => mod.CardHeader))
+const CardTitle = dynamic(() => import('./ui/card').then((mod) => mod.CardTitle))
+const Input = dynamic(() => import('./ui/input').then((mod) => mod.Input))
 
 const symbolMap = {
     '∀': 1, '∃': 2, '¬': 3, '∨': 4, '∧': 5, '→': 6, '↔': 7,
@@ -45,16 +45,31 @@ const MathKeyboard = ({ onSymbolClick }) => {
 };
 
 const GodelTree = ({ encoding }) => {
+    const [selectedNode, setSelectedNode] = useState(null);
+
     if (!encoding || encoding.length === 0) return null;
 
     const maxDepth = Math.max(...encoding.map(item => item.code));
+    const width = encoding.length * 60;
+    const height = maxDepth * 60 + 60;
+
+    const handleNodeClick = (item) => {
+        setSelectedNode(selectedNode === item ? null : item);
+    };
 
     return (
-        <div className="overflow-x-auto">
-            <svg width={encoding.length * 60} height={maxDepth * 35 + 60}>
+        <div className="relative overflow-x-auto">
+            <svg width={width} height={height}>
                 {encoding.map((item, index) => (
                     <g key={index} transform={`translate(${index * 60 + 30}, 30)`}>
-                        <circle cx="0" cy="0" r="20" fill="#4a5568" />
+                        <circle
+                            cx="0"
+                            cy="0"
+                            r="20"
+                            fill={selectedNode === item ? "#f6ad55" : "#4a5568"}
+                            onClick={() => handleNodeClick(item)}
+                            className="cursor-pointer transition-colors duration-200 hover:fill-blue-500"
+                        />
                         <text x="0" y="5" textAnchor="middle" fill="white" fontSize="14">
                             {item.symbol}
                         </text>
@@ -74,6 +89,14 @@ const GodelTree = ({ encoding }) => {
                     </g>
                 ))}
             </svg>
+            {selectedNode && (
+                <div className="absolute top-2 right-2 bg-white p-4 rounded shadow-lg">
+                    <h3 className="text-lg font-semibold mb-2">{selectedNode.symbol}</h3>
+                    <p>Prime: {selectedNode.prime}</p>
+                    <p>Code: {selectedNode.code}</p>
+                    <p>Factor: {selectedNode.factor}</p>
+                </div>
+            )}
         </div>
     );
 };
