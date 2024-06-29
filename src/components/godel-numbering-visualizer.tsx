@@ -306,7 +306,8 @@ const GodelNumberingCreator: React.FC = () => {
     };
 
     const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-        setInput(e.target.value);
+        const target = e.target as HTMLInputElement;
+        setInput(target.value);
     };
 
     return (
