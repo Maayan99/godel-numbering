@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
+    "@visx/drag": "^3.3.0",
+    "@visx/group": "^3.3.0",
+    "@visx/hierarchy": "^3.3.0",
+    "@visx/react-spring": "^3.10.1",
+    "@visx/shape": "^3.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "lucide-react": "^0.399.0",

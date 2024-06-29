@@ -44,7 +44,7 @@ const GodelTree = ({ encoding }) => {
 
     return (
         <div className="overflow-x-auto">
-            <svg width={encoding.length * 60} height={maxDepth * 60 + 60}>
+            <svg width={encoding.length * 60} height={maxDepth * 35 + 60}>
                 {encoding.map((item, index) => (
                     <g key={index} transform={`translate(${index * 60 + 30}, 30)`}>
                         <circle cx="0" cy="0" r="20" fill="#4a5568" />
