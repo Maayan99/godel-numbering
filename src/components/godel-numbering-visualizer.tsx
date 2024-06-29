@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { Input } from "../components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
+import { Input } from "./ui/input"
 import { AlertCircle } from 'lucide-react'
 
 const symbolMap = {
