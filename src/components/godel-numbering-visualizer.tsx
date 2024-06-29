@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect, ChangeEvent} from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { AlertCircle } from 'lucide-react'
@@ -305,6 +305,10 @@ const GodelNumberingCreator: React.FC = () => {
         setInput(prev => prev + symbol);
     };
 
+    const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setInput(e.target.value);
+    };
+
     return (
         <Card className="w-full max-w-4xl mx-auto">
             <CardHeader>
@@ -316,7 +320,7 @@ const GodelNumberingCreator: React.FC = () => {
                     <Input
                         type="text"
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={handleInputChange}
                         placeholder="Enter Peano Arithmetic sentence"
                     />
                 </div>
