@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle } from 'lucide-react'
 import dynamic from 'next/dynamic'
 
-const Card = dynamic(() => import('./ui/card').then((mod) => mod.Card))
-const CardContent = dynamic(() => import('./ui/card').then((mod) => mod.CardContent))
-const CardHeader = dynamic(() => import('./ui/card').then((mod) => mod.CardHeader))
-const CardTitle = dynamic(() => import('./ui/card').then((mod) => mod.CardTitle))
-const Input = dynamic(() => import('./ui/input').then((mod) => mod.Input))
+const Card = dynamic(() => import('@app/components/ui/card').then((mod) => mod.Card))
+const CardContent = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardContent))
+const CardHeader = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardHeader))
+const CardTitle = dynamic(() => import('@app/components/ui/card').then((mod) => mod.CardTitle))
+const Input = dynamic(() => import('@app/components/ui/input').then((mod) => mod.Input))
 
 const symbolMap = {
     '∀': 1, '∃': 2, '¬': 3, '∨': 4, '∧': 5, '→': 6, '↔': 7,
