@@ -51,7 +51,7 @@ const GodelTree = ({ encoding }) => {
 
     const maxDepth = Math.max(...encoding.map(item => item.code));
     const width = encoding.length * 60;
-    const height = maxDepth * 60 + 60;
+    const height = maxDepth * 35 + 60;
 
     const handleNodeClick = (item) => {
         setSelectedNode(selectedNode === item ? null : item);
