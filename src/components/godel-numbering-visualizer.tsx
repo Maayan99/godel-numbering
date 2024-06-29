@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { AlertCircle } from 'lucide-react'
 
 const symbolMap = {
     '∀': 1, '∃': 2, '¬': 3, '∨': 4, '∧': 5, '→': 6, '↔': 7,
@@ -29,9 +29,9 @@ const MathKeyboard = ({ onSymbolClick }) => {
     return (
         <div className="grid grid-cols-6 gap-2 mb-4">
             {symbols.map((symbol) => (
-                <Button key={symbol} onClick={() => onSymbolClick(symbol)} variant="outline" className="w-10 h-10">
+                <button key={symbol} onClick={() => onSymbolClick(symbol)} className="px-3 py-1 border rounded">
                     {symbol}
-                </Button>
+                </button>
             ))}
         </div>
     );
@@ -44,7 +44,7 @@ const GodelTree = ({ encoding }) => {
 
     return (
         <div className="overflow-x-auto">
-            <svg width={encoding.length * 60} height={maxDepth * 35 + 60}>
+            <svg width={encoding.length * 60} height={maxDepth * 60 + 60}>
                 {encoding.map((item, index) => (
                     <g key={index} transform={`translate(${index * 60 + 30}, 30)`}>
                         <circle cx="0" cy="0" r="20" fill="#4a5568" />
@@ -71,38 +71,227 @@ const GodelTree = ({ encoding }) => {
     );
 };
 
+const RecursiveFunctionBuilder = ({ sentence }) => {
+    const [steps, setSteps] = useState([]);
+
+    useEffect(() => {
+        if (sentence) {
+            const newSteps = buildRecursiveFunction(sentence);
+            setSteps(newSteps);
+        }
+    }, [sentence]);
+
+    const tokenize = (input) => {
+        return input.match(/∀|∃|¬|∨|∧|→|↔|=|\+|\*|\(|\)|0|S|[xyz]|\s+/g) || [];
+    };
+
+    const parse = (tokens) => {
+        let position = 0;
+
+        const parseExpression = () => {
+            let left = parseTerm();
+            while (position < tokens.length && ['+', '*', '∨', '∧', '→', '↔', '='].includes(tokens[position])) {
+                const operator = tokens[position++];
+                const right = parseTerm();
+                left = { type: 'binary', operator, left, right };
+            }
+            return left;
+        };
+
+        const parseTerm = () => {
+            if (tokens[position] === '(') {
+                position++;
+                const exp = parseExpression();
+                position++; // consume ')'
+                return exp;
+            } else if (tokens[position] === '¬') {
+                position++;
+                return { type: 'unary', operator: '¬', operand: parseTerm() };
+            } else if (['∀', '∃'].includes(tokens[position])) {
+                const quantifier = tokens[position++];
+                const variable = tokens[position++];
+                return { type: 'quantifier', quantifier, variable, body: parseExpression() };
+            } else if (tokens[position] === 'S') {
+                position++;
+                return { type: 'successor', operand: parseTerm() };
+            } else {
+                return { type: 'atom', value: tokens[position++] };
+            }
+        };
+
+        return parseExpression();
+    };
+
+    const buildRecursiveFunction = (sent) => {
+        const tokens = tokenize(sent);
+        const ast = parse(tokens);
+        const steps = [];
+        let functionCounter = 0;
+
+        const processNode = (node) => {
+            switch (node.type) {
+                case 'atom':
+                    if (node.value === '0') {
+                        steps.push({
+                            type: 'basic',
+                            content: `f${functionCounter} = Z`,
+                            description: 'Zero function'
+                        });
+                    } else {
+                        steps.push({
+                            type: 'basic',
+                            content: `f${functionCounter} = U^1_1`,
+                            description: `Identity function for ${node.value}`
+                        });
+                    }
+                    break;
+                case 'successor':
+                    processNode(node.operand);
+                    steps.push({
+                        type: 'composition',
+                        content: `f${functionCounter + 1} = S ∘ f${functionCounter}`,
+                        description: 'Successor function'
+                    });
+                    functionCounter++;
+                    break;
+                case 'binary':
+                    processNode(node.left);
+                    const leftIndex = functionCounter;
+                    processNode(node.right);
+                    const rightIndex = functionCounter;
+                    let op, desc;
+                    switch (node.operator) {
+                        case '+':
+                            op = 'add';
+                            desc = 'Addition';
+                            break;
+                        case '*':
+                            op = 'mul';
+                            desc = 'Multiplication';
+                            break;
+                        case '∨':
+                            op = 'or';
+                            desc = 'Logical OR';
+                            break;
+                        case '∧':
+                            op = 'and';
+                            desc = 'Logical AND';
+                            break;
+                        case '→':
+                            op = 'impl';
+                            desc = 'Implication';
+                            break;
+                        case '↔':
+                            op = 'equiv';
+                            desc = 'Equivalence';
+                            break;
+                        case '=':
+                            op = 'eq';
+                            desc = 'Equality';
+                            break;
+                    }
+                    steps.push({
+                        type: 'composition',
+                        content: `f${functionCounter + 1} = ${op} ∘ (f${leftIndex}, f${rightIndex})`,
+                        description: `${desc}: ${op}(x, y)`
+                    });
+                    functionCounter++;
+                    break;
+                case 'unary':
+                    processNode(node.operand);
+                    steps.push({
+                        type: 'composition',
+                        content: `f${functionCounter + 1} = not ∘ f${functionCounter}`,
+                        description: 'Logical NOT'
+                    });
+                    functionCounter++;
+                    break;
+                case 'quantifier':
+                    processNode(node.body);
+                    steps.push({
+                        type: 'minimization',
+                        content: `f${functionCounter + 1} = μ[f${functionCounter}]`,
+                        description: `${node.quantifier === '∀' ? 'Universal' : 'Existential'} quantifier over ${node.variable}`
+                    });
+                    functionCounter++;
+                    break;
+            }
+        };
+
+        processNode(ast);
+        return steps;
+    };
+
+    const renderStep = (step, index) => {
+        let color = 'text-blue-600';
+        switch (step.type) {
+            case 'basic': color = 'text-green-600'; break;
+            case 'composition': color = 'text-red-600'; break;
+            case 'minimization': color = 'text-yellow-600'; break;
+        }
+
+        return (
+            <div key={index} className={`${color} my-1`}>
+                <span className="font-bold">{step.content}</span>
+                <span className="ml-2 text-gray-600">// {step.description}</span>
+            </div>
+        );
+    };
+
+    return (
+        <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+            <h3 className="text-lg font-semibold mb-2">Recursive Function Construction:</h3>
+            {steps.length > 0 ? (
+                <div className="font-mono">
+                    {steps.map((step, index) => renderStep(step, index))}
+                </div>
+            ) : (
+                <div className="flex items-center text-yellow-600">
+                    <AlertCircle className="mr-2" />
+                    <span>Enter a sentence to see its recursive function construction.</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const GodelNumberingCreator = () => {
     const [input, setInput] = useState('');
     const [result, setResult] = useState(null);
+
+    useEffect(() => {
+        if (input) {
+            const { encoding, godelNumber } = godelEncode(input);
+            setResult({ encoding, godelNumber });
+        } else {
+            setResult(null);
+        }
+    }, [input]);
 
     const handleSymbolClick = (symbol) => {
         setInput(prev => prev + symbol);
     };
 
-    const handleEncode = () => {
-        const { encoding, godelNumber } = godelEncode(input);
-        setResult({ encoding, godelNumber });
-    };
-
     return (
         <Card className="w-full max-w-4xl mx-auto">
             <CardHeader>
-                <CardTitle>Enhanced Gödel Numbering Creator</CardTitle>
+                <CardTitle>Automatic Gödel Numbering Creator with Recursive Function Builder</CardTitle>
             </CardHeader>
             <CardContent>
                 <MathKeyboard onSymbolClick={handleSymbolClick} />
-                <div className="flex space-x-2 mb-4">
+                <div className="mb-4">
                     <Input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Enter Peano Arithmetic sentence"
                     />
-                    <Button onClick={handleEncode}>Encode</Button>
                 </div>
 
+                <RecursiveFunctionBuilder sentence={input} />
+
                 {result && (
-                    <div>
+                    <div className="mt-4">
                         <p className="mb-2">Gödel Number: {result.godelNumber}</p>
                         <GodelTree encoding={result.encoding} />
                         <div className="mt-4">
