@@ -1,24 +1,33 @@
 import React, { useState, useEffect } from 'react';
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { AlertCircle } from 'lucide-react'
-import dynamic from 'next/dynamic'
 
-const Card = dynamic(() => import('./ui/card').then((mod) => mod.Card))
-const CardContent = dynamic(() => import('./ui/card').then((mod) => mod.CardContent))
-const CardHeader = dynamic(() => import('./ui/card').then((mod) => mod.CardHeader))
-const CardTitle = dynamic(() => import('./ui/card').then((mod) => mod.CardTitle))
-const Input = dynamic(() => import('./ui/input').then((mod) => mod.Input))
+interface SymbolMap {
+    [key: string]: number;
+}
 
-const symbolMap = {
+const symbolMap: SymbolMap = {
     '∀': 1, '∃': 2, '¬': 3, '∨': 4, '∧': 5, '→': 6, '↔': 7,
     '=': 8, '+': 9, '*': 10, '(': 11, ')': 12, '0': 13,
     'S': 14, 'x': 15, 'y': 16, 'z': 17
 };
 
-const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71];
+const primes: number[] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71];
 
-const godelEncode = (sentence) => {
+interface EncodingItem {
+    symbol: string;
+    code: number;
+    prime: string;
+    factor: string;
+}
+
+interface EncodingResult {
+    encoding: EncodingItem[];
+    godelNumber: string;
+}
+
+const godelEncode = (sentence: string): EncodingResult => {
     const symbols = sentence.split('');
     let godelNumber = 1n;
     const encoding = symbols.map((symbol, index) => {
@@ -26,12 +35,21 @@ const godelEncode = (sentence) => {
         const prime = BigInt(primes[index]);
         const factor = prime ** BigInt(code);
         godelNumber *= factor;
-        return { symbol, code, prime: prime.toString(), factor: factor.toString() };
+        return {
+            symbol,
+            code,
+            prime: prime.toString(),
+            factor: factor.toString()
+        };
     });
     return { encoding, godelNumber: godelNumber.toString() };
 };
 
-const MathKeyboard = ({ onSymbolClick }) => {
+interface MathKeyboardProps {
+    onSymbolClick: (symbol: string) => void;
+}
+
+const MathKeyboard: React.FC<MathKeyboardProps> = ({ onSymbolClick }) => {
     const symbols = ['∀', '∃', '¬', '∨', '∧', '→', '↔', '=', '+', '*', '(', ')', '0', 'S', 'x', 'y', 'z'];
     return (
         <div className="grid grid-cols-6 gap-2 mb-4">
@@ -44,32 +62,21 @@ const MathKeyboard = ({ onSymbolClick }) => {
     );
 };
 
-const GodelTree = ({ encoding }) => {
-    const [selectedNode, setSelectedNode] = useState(null);
+interface GodelTreeProps {
+    encoding: EncodingItem[];
+}
 
+const GodelTree: React.FC<GodelTreeProps> = ({ encoding }) => {
     if (!encoding || encoding.length === 0) return null;
 
     const maxDepth = Math.max(...encoding.map(item => item.code));
-    const width = encoding.length * 60;
-    const height = maxDepth * 35 + 60;
-
-    const handleNodeClick = (item) => {
-        setSelectedNode(selectedNode === item ? null : item);
-    };
 
     return (
-        <div className="relative overflow-x-auto">
-            <svg width={width} height={height}>
+        <div className="overflow-x-auto">
+            <svg width={encoding.length * 60} height={maxDepth * 35 + 60}>
                 {encoding.map((item, index) => (
                     <g key={index} transform={`translate(${index * 60 + 30}, 30)`}>
-                        <circle
-                            cx="0"
-                            cy="0"
-                            r="20"
-                            fill={selectedNode === item ? "#f6ad55" : "#4a5568"}
-                            onClick={() => handleNodeClick(item)}
-                            className="cursor-pointer transition-colors duration-200 hover:fill-blue-500"
-                        />
+                        <circle cx="0" cy="0" r="20" fill="#4a5568" />
                         <text x="0" y="5" textAnchor="middle" fill="white" fontSize="14">
                             {item.symbol}
                         </text>
@@ -89,17 +96,13 @@ const GodelTree = ({ encoding }) => {
                     </g>
                 ))}
             </svg>
-            {selectedNode && (
-                <div className="absolute top-2 right-2 bg-white p-4 rounded shadow-lg">
-                    <h3 className="text-lg font-semibold mb-2">{selectedNode.symbol}</h3>
-                    <p>Prime: {selectedNode.prime}</p>
-                    <p>Code: {selectedNode.code}</p>
-                    <p>Factor: {selectedNode.factor}</p>
-                </div>
-            )}
         </div>
     );
 };
+
+interface RecursiveFunctionBuilderProps {
+    sentence: string;
+}
 
 const RecursiveFunctionBuilder = ({ sentence }) => {
     const [steps, setSteps] = useState([]);
@@ -285,27 +288,27 @@ const RecursiveFunctionBuilder = ({ sentence }) => {
     );
 };
 
-const GodelNumberingCreator = () => {
-    const [input, setInput] = useState('');
-    const [result, setResult] = useState(null);
+const GodelNumberingCreator: React.FC = () => {
+    const [input, setInput] = useState<string>('');
+    const [result, setResult] = useState<EncodingResult | null>(null);
 
     useEffect(() => {
         if (input) {
-            const { encoding, godelNumber } = godelEncode(input);
-            setResult({ encoding, godelNumber });
+            const encodingResult = godelEncode(input);
+            setResult(encodingResult);
         } else {
             setResult(null);
         }
     }, [input]);
 
-    const handleSymbolClick = (symbol) => {
+    const handleSymbolClick = (symbol: string) => {
         setInput(prev => prev + symbol);
     };
 
     return (
         <Card className="w-full max-w-4xl mx-auto">
             <CardHeader>
-                <CardTitle>Automatic Gödel Numbering Creator with Recursive Function Builder</CardTitle>
+                <CardTitle>Gödel Numbering Creator with Recursive Function Builder</CardTitle>
             </CardHeader>
             <CardContent>
                 <MathKeyboard onSymbolClick={handleSymbolClick} />
